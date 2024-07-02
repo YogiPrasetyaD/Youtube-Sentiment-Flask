@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-heading">
+    <h3>Sentimen Analisis YouTube</h3>
+</div>
+<div class="page-content">
+    <div class="row">
+        <div class="col-12 col-lg-9">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Masukkan URL Video YouTube</h4>
+                    <form method="POST">
+                        <div class="form-group">
+                            <input type="text" id="video-url" name="video_url" class="form-control" placeholder="Enter YouTube video URL" value="{{ video_url }}">
+                        </div>
+                        <button type="submit" name="fetch" class="btn btn-primary">Ambil Komentar</button>
+                        <button type="submit" name="analyze" class="btn btn-success">Analisis Sentimen</button>
+                    </form>
+                </div>
+            </div>
+            {% if video_id %}
+            <div id="video-container" class="card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Pratinjau Video YouTube</h4>
+                    <iframe id="video-preview" width="560" height="315" frameborder="0" allowfullscreen src="https://www.youtube.com/embed/{{ video_id }}"></iframe>
+                </div>
+            </div>
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Hasil Komentar</h4>
+                    <div class="table-responsive datatable-minimal">
+                        <table class="table" id="comments-table">
+                            <thead>
+                                <tr>
+                                    <th>Profile</th>
+                                    <th>Author</th>
+                                    <th>Comment</th>
+                                    <th>Likes</th>
+                                    <th>Published At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for comment in comments %}
+                                <tr>
+                                    <td><img src="{{ comment.author_profile_image_url }}" alt="Profile" width="50"></td>
+                                    <td><a href="{{ comment.author_channel_url }}" target="_blank">{{ comment.author }}</a></td>
+                                    <td>{{ comment.text }}</td>
+                                    <td>{{ comment.like_count }}</td>
+                                    <td>{{ comment.published_at }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% if sentiment_comments %}
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Hasil Sentimen Analisis</h4>
+                    <div class="table-responsive datatable-minimal">
+                        <table class="table" id="sentiment-table">
+                            <thead>
+                                <tr>
+                                    <th>Profile</th>
+                                    <th>Author</th>
+                                    <th>Comment</th>
+                                    <th>Sentiment</th>
+                                    <th>Sentiment Score</th>
+                                    <th>Likes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for comment in sentiment_comments %}
+                                <tr>
+                                    <td><img src="{{ comment.author_profile_image_url }}" alt="Profile" width="50"></td>
+                                    <td><a href="{{ comment.author_channel_url }}" target="_blank">{{ comment.author }}</a></td>
+                                    <td>{{ comment.text }}</td>
+                                    <td>{{ comment.sentiment }}</td>
+                                    <td>{{ comment.sentiment_score }}</td>
+                                    <td>{{ comment.like_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="charts-container" class="card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Visualisasi Distribusi Sentimen</h4>
+                    <div id="pie-chart"></div>
+                    <div id="bar-chart"></div>
+                </div>
+            </div>            
+            <div id="top-words-container" class="card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Top Kata Berdasarkan Label</h4>
+                    <div class="form-group">
+                        <label for="sentiment-label">Pilih Label Sentimen:</label>
+                        <select id="sentiment-label" class="form-control">
+                            <option value="positive">Positif</option>
+                            <option value="negative">Negatif</option>
+                            <option value="neutral">Netral</option>
+                        </select>
+                    </div>
+                    <div id="top-words-chart"></div>
+                </div>
+            </div>
+            <div id="wordcloud-container" class="card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Word Cloud Berdasarkan Label</h4>
+                    <div class="form-group">
+                        <label for="wordcloud-sentiment-label">Pilih Label Sentimen:</label>
+                        <select id="wordcloud-sentiment-label" class="form-control">
+                            <option value="positive">Positif</option>
+                            <option value="negative">Negatif</option>
+                            <option value="neutral">Netral</option>
+                        </select>
+                    </div>
+                    <div id="wordcloud-chart">
+                        <img id="wordcloud-img" src="" alt="Word Cloud">
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="video-id" value="{{ video_id }}">
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="col-12 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Top Komentar Berdasarkan Sentimen</h4>
+                    <div class="form-group">
+                        <label for="top-comments-sentiment">Pilih Sentimen</label>
+                        <select id="top-comments-sentiment" class="form-control">
+                            <option value="positive">Positif</option>
+                            <option value="negative">Netral</option>
+                            <option value="neutral">Negatif</option>
+                        </select>
+                    </div>
+                    <div id="top-comments-container">
+                        <!-- Komentar akan diisi di sini -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="{{ url_for('static', filename='visualization.js') }}"></script>
+
+<!-- Include jQuery and DataTables CSS/JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<!-- Custom CSS -->
+<style>
+    .social-comment {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        background-color: #2c2c2c;
+    }
+    .comment-author {
+        display: flex;
+        align-items: center;
+    }
+    .comment-author img {
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    .comment-author span {
+        font-weight: bold;
+    }
+    .comment-text {
+        margin-top: 10px;
+    }
+    .comment-likes {
+        margin-top: 10px;
+        color: #777;
+    }
+</style>
+
+<style>
+    .dataTables_wrapper .dataTables_length, 
+    .dataTables_wrapper .dataTables_filter, 
+    .dataTables_wrapper .dataTables_info, 
+    .dataTables_wrapper .dataTables_paginate {
+        color: #fff; /* Text color for table controls */
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        color: #fff !important; /* Pagination button text color */
+    }
+    table.dataTable {
+        background-color: #2c2c2c; /* Table background color */
+        color: #fff; /* Table text color */
+    }
+    table.dataTable thead th {
+        background-color: #444; /* Table header background color */
+        color: #fff; /* Table header text color */
+    }
+    table.dataTable tbody tr {
+        background-color: #333; /* Table row background color */
+    }
+    table.dataTable tbody tr:nth-child(even) {
+        background-color: #3b3b3b; /* Alternate row color */
+    }
+    table.dataTable tbody tr:hover {
+        background-color: #555; /* Row hover color */
+    }
+    table.dataTable td, table.dataTable th {
+        border: 1px solid #555; /* Border color */
+    }
+</style>
+<script>
+    $(document).ready(function() {
+        $('#comments-table').DataTable({
+            "scrollX": true,
+            "scrollY": "400px",
+            "paging": true
+        });
+        $('#sentiment-table').DataTable({
+            "scrollX": true,
+            "scrollY": "400px",
+            "paging": true
+        });
+
+        $('#sentiment-label').change(function() {
+            var label = $(this).val();
+            var video_id = $('#video-id').val();
+            fetchTopWords(video_id, label);
+        });
+
+        $('#wordcloud-sentiment-label').change(function() {
+            var label = $(this).val();
+            var video_id = $('#video-id').val();
+            fetchWordCloud(video_id, label);
+        });
+    });
+</script>
+{% endblock %}
